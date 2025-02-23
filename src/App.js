@@ -6,7 +6,8 @@ function App() {
   return (
     <div className="container">
       <div className="card">
-        <img src="/icon.png" alt="VoiceVault Logo" className="logo" />
+      <img src={`${process.env.PUBLIC_URL}/icon.png`} alt="VoiceVault Logo" className="logo" />
+
         <h1>Authentication Successful</h1>
         <p>You can now return to the app.</p>
       </div>
