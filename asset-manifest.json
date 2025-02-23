@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/voicevault-authpage/static/css/main.637bf678.css",
+    "main.js": "/voicevault-authpage/static/js/main.01b200bc.js",
+    "index.html": "/voicevault-authpage/index.html",
+    "main.637bf678.css.map": "/voicevault-authpage/static/css/main.637bf678.css.map",
+    "main.01b200bc.js.map": "/voicevault-authpage/static/js/main.01b200bc.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.637bf678.css",
+    "static/js/main.01b200bc.js"
+  ]
+}
