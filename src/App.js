@@ -1,81 +1,119 @@
 // src/App.js
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import "./index.css";
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client for the web app
+// Ensure these environment variables are set in your .env file for the web app
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 function App() {
-   useEffect(() => {
-     // This script handles redirects from Supabase authentication flows to your mobile app.
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
-     function getHashParams() {
-       const params = {};
-       window.location.hash.substring(1).split('&').forEach(param => {
-         const [key, value] = param.split('=');
-         params[key] = decodeURIComponent(value);
-       });
-       return params;
-     }
-     const hashParams = getHashParams();
+  useEffect(() => {
+    const getHashParams = () => {
+      const params = {};
+      window.location.hash.substring(1).split('&').forEach(param => {
+        const [key, value] = param.split('=');
+        params[key] = decodeURIComponent(value);
+      });
+      return params;
+    };
 
-     // Check for Supabase authentication parameters in the URL hash
-     const accessToken = hashParams.access_token;
-     const refreshToken = hashParams.refresh_token;
-     const type = hashParams.type; // e.g., 'recovery', 'signup'
-     const expiresIn = hashParams.expires_in;
-     const error = hashParams.error;
-     const errorDescription = hashParams.error_description;
+    const hashParams = getHashParams();
+    const type = hashParams.type;
+    const accessToken = hashParams.access_token;
+    const refreshToken = hashParams.refresh_token;
 
-     // Construct the deep link URL for your mobile app
-     let deepLink = 'voicevault://';
+    if (type === 'recovery' && accessToken && refreshToken) {
+      // This is a password reset flow
+      setIsResettingPassword(true);
+      // Set the session from the URL hash
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        expires_in: parseInt(hashParams.expires_in || '3600'), // Default expiry
+        token_type: 'bearer',
+        user: null // User object will be fetched by Supabase if needed
+      }).then(({ error }) => {
+        if (error) {
+          setMessage(`Error setting session: ${error.message}`);
+          setIsResettingPassword(false);
+        } else {
+          setMessage('Please enter your new password.');
+        }
+      });
+    } else {
+      // Default state for successful authentication or other redirects
+      setMessage('You can now return to the app.');
+    }
+  }, []);
 
-     if (type === 'recovery' && accessToken && refreshToken) {
-       // This is a password reset flow
-       deepLink += 'reset-password'; // Your ResetPasswordScreen route
-       deepLink += `?access_token=${accessToken}`;
-       deepLink += `&refresh_token=${refreshToken}`;
-       if (expiresIn) deepLink += `&expires_in=${expiresIn}`;
-     } else if (error) {
-       // Handle errors by redirecting to a login screen with error info
-       deepLink += 'login'; // Or a specific error screen
-       deepLink += `?error=${error}`;
-       if (errorDescription) deepLink += `&error_description=${errorDescription}`;
-     } else {
-       // For other authentication types (e.g., signup confirmation, magic link)
-       // You might want to redirect to a success screen or home screen
-       deepLink += 'login'; // Default to login or home if no specific type
-       if (accessToken) deepLink += `?access_token=${accessToken}`;
-       if (refreshToken) deepLink += `&refresh_token=${refreshToken}`;
-     }
+  const handlePasswordUpdate = async () => {
+    if (newPassword !== confirmPassword) {
+      setMessage('Passwords do not match.');
+      return;
+    }
+    if (!newPassword) {
+      setMessage('Password cannot be empty.');
+      return;
+    }
 
-     // Attempt to redirect to the deep link
-     // Using window.location.replace to prevent back button issues
-     window.location.replace(deepLink);
+    setMessage('Updating password...');
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
 
-     // Fallback: If the deep link doesn't open the app (e.g., app not installed),
-     // you might want to show a message or redirect to an app store link.
-     // This part will only execute if the deep link fails to open the app.
-     const timer = setTimeout(() => {
-       const messageElement = document.getElementById('message');
-       if (messageElement) {
-         messageElement.innerText = 'If the app did not open, please ensure it is installed.';
-       }
-       // Or redirect to an app store: window.location.href = 'https://your-app-store-link.com';
-       console.log('App did not open, consider showing a fallback message or app store link.');
-     }, 1000); // Give the deep link a moment to try and open the app
+    if (error) {
+      setMessage(`Error updating password: ${error.message}`);
+    } else {
+      setMessage('Your password has been updated successfully! You can now return to the app.');
+      setNewPassword('');
+      setConfirmPassword('');
+      setIsResettingPassword(false); // Hide the form after successful reset
+    }
+  };
 
-     return () => clearTimeout(timer); // Cleanup the timer if component unmounts
-   }, []); // Empty dependency array ensures this runs only once on mount
+  return (
+    <div className="container">
+      <div className="card">
+        <img src={`${process.env.PUBLIC_URL}/icon.png`} alt="VoiceVault Logo" className="logo" />
 
-   return (
-     <div className="container">
-       <div className="card">
-       <img src={`${process.env.PUBLIC_URL}/icon.png`} alt="VoiceVault Logo" className="logo" />
+        {isResettingPassword ? (
+          <>
+            <h1>Reset Password</h1>
+            <p>{message}</p>
+            <input
+              type="password"
+              placeholder="New Password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              style={{ marginBottom: '10px', padding: '8px', width: '80%' }}
+            />
+            <input
+              type="password"
+              placeholder="Confirm New Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              style={{ marginBottom: '20px', padding: '8px', width: '80%' }}
+            />
+            <button onClick={handlePasswordUpdate} style={{ padding: '10px 20px', cursor: 'pointer' }}>
+              Update Password
+            </button>
+          </>
+        ) : (
+          <>
+            <h1>Authentication Successful</h1>
+            <p>{message}</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
-         <h1>Authentication Successful</h1>
-         <p>You can now return to the app.</p>
-         <p id="message"></p> {/* Optional: for displaying fallback messages */}
-       </div>
-     </div>
-   );
- }
-
- export default App;
+export default App;
