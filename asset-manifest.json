@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/voicevault-authpage/static/css/main.637bf678.css",
-    "main.js": "/voicevault-authpage/static/js/main.c1b7a97e.js",
+    "main.js": "/voicevault-authpage/static/js/main.9de61439.js",
     "index.html": "/voicevault-authpage/index.html",
     "main.637bf678.css.map": "/voicevault-authpage/static/css/main.637bf678.css.map",
-    "main.c1b7a97e.js.map": "/voicevault-authpage/static/js/main.c1b7a97e.js.map"
+    "main.9de61439.js.map": "/voicevault-authpage/static/js/main.9de61439.js.map"
   },
   "entrypoints": [
     "static/css/main.637bf678.css",
-    "static/js/main.c1b7a97e.js"
+    "static/js/main.9de61439.js"
   ]
 }
